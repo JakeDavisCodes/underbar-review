@@ -210,26 +210,31 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
-    /*
-    if !accumulator
-      accumulator = collection 0
-      iterate collection begining at 1
-        accumulator = iterator(item)
-    else
-      iterate collection
-        accumulator = iterator(item)
-    return accumulator
-    */
-
-    if (accumulator === undefined) {
-      accumulator = collection[0];
-      for (let i = 1; i < collection.length; i++) {
-        accumulator = iterator(accumulator, collection[i]);
+    if (Array.isArray(collection)) {
+      if (accumulator === undefined) {
+        accumulator = collection[0];
+        for (let i = 1; i < collection.length; i++) {
+          accumulator = iterator(accumulator, collection[i]);
+        }
+      } else {
+        for (let i = 0; i < collection.length; i++) {
+          accumulator = iterator(accumulator, collection[i]);
+        }
       }
+      // if collection is an object -
     } else {
-      for (let i = 0; i < collection.length; i++) {
-        accumulator = iterator(accumulator, collection[i]);
-      }
+      // iterate through the collection
+      _.each(collection, function(value) {
+        // if accumulator is present
+        if (accumulator !== undefined) {
+          // set accumulator equal to calling iterator on accumulator, value
+          accumulator = iterator(accumulator, value);
+        } else {
+          // set accumulator equal to value
+          accumulator = value;
+        }
+
+      });
     }
 
     return accumulator;
@@ -250,13 +255,46 @@
 
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
-    // TIP: Try re-using reduce() here.
+    if (iterator) {
+      return _.reduce(collection, function(memo, item) {
+        if (!iterator(item)) {
+          return false;
+        } else {
+          return memo;
+        }
+      }, true);
+    } else {
+      return _.reduce(collection, function(memo, item) {
+        if (!item) {
+          return false;
+        } else {
+          return memo;
+        }
+      }, true);
+    }
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    if (iterator) {
+      return _.reduce(collection, function(memo, item) {
+        if (iterator(item)) {
+          return true;
+        } else {
+          return memo;
+        }
+      }, false);
+    } else {
+      return _.reduce(collection, function(memo, item) {
+        if (item) {
+          return true;
+        } else {
+          return memo;
+        }
+      }, false);
+    }
   };
 
 
@@ -278,12 +316,29 @@
   //   }, {
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
-  _.extend = function(obj) {
+  _.extend = function(obj, sources) {
+
+    _.each(arguments, function(object) {
+      for (var key in object) {
+        obj[key] = object[key];
+      }
+    });
+
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    _.each(arguments, function(object) {
+      for (var key in object) {
+        if (obj[key] === undefined) {
+          obj[key] = object[key];
+        }
+      }
+    });
+
+    return obj;
   };
 
 
@@ -327,6 +382,16 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var storage = {};
+
+    return function() {
+      if (storage[JSON.stringify(arguments)]) {
+        return storage[JSON.stringify(arguments)];
+      } else {
+        storage[JSON.stringify(arguments)] = func.apply(this, arguments);
+        return storage[JSON.stringify(arguments)];
+      }
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -336,6 +401,7 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    return setTimeout.apply(this, arguments);
   };
 
 
